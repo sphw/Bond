@@ -108,9 +108,9 @@ private struct ReloadingTableViewBond<DataSource: DataSourceProtocol>: TableView
   }
 }
 
-public extension SignalProtocol where Element: DataSourceEventProtocol, Error == NoError {
+public extension SignalProtocol where X: DataSourceEventProtocol, Error == NoError {
 
-  public typealias DataSource = Element.DataSource
+  public typealias DataSource = X.DataSource
 
   @discardableResult
   public func bind(to tableView: UITableView, animated: Bool = true, createCell: @escaping (DataSource, IndexPath, UITableView) -> UITableViewCell) -> Disposable {

@@ -28,12 +28,12 @@ import ReactiveKit
 extension NSObject {
 
   /// Bind `signal` to `bindable` and dispose in `bnd_bag` of receiver.
-  public func bind<O: SignalProtocol, B: BindableProtocol>(_ signal: O, to bindable: B) where O.Element == B.Element, O.Error == NoError {
+  public func bind<O: SignalProtocol, B: BindableProtocol>(_ signal: O, to bindable: B) where O.X == B.X, O.Error == NoError {
     signal.bind(to: bindable).dispose(in: bag)
   }
   
   /// Bind `signal` to `bindable` and dispose in `bnd_bag` of receiver.
-  public func bind<O: SignalProtocol, B: BindableProtocol>(_ signal: O, to bindable: B) where B.Element: OptionalProtocol, O.Element == B.Element.Wrapped, O.Error == NoError {
+  public func bind<O: SignalProtocol, B: BindableProtocol>(_ signal: O, to bindable: B) where B.X: OptionalProtocol, O.X == B.X.Wrapped, O.Error == NoError {
     signal.bind(to: bindable).dispose(in: bag)
   }
 }

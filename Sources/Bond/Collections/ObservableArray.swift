@@ -123,28 +123,28 @@ extension ObservableArray where Item: Equatable {
 
 public class MutableObservableArray<Item>: ObservableArray<Item> {
   
-  /// Append `newElement` to the array.
-  public func append(_ newElement: Item) {
+  /// Append `newX` to the array.
+  public func append(_ newX: Item) {
     lock.lock(); defer { lock.unlock() }
-    array.append(newElement)
+    array.append(newX)
     subject.next(ObservableArrayEvent(change: .inserts([array.count-1]), source: self))
   }
   
-  /// Insert `newElement` at index `i`.
-  public func insert(_ newElement: Item, at index: Int)  {
+  /// Insert `newX` at index `i`.
+  public func insert(_ newX: Item, at index: Int)  {
     lock.lock(); defer { lock.unlock() }
-    array.insert(newElement, at: index)
+    array.insert(newX, at: index)
     subject.next(ObservableArrayEvent(change: .inserts([index]), source: self))
   }
   
-  /// Insert elements `newElements` at index `i`.
-  public func insert(contentsOf newElements: [Item], at index: Int) {
+  /// Insert Xs `newXs` at index `i`.
+  public func insert(contentsOf newXs: [Item], at index: Int) {
     lock.lock(); defer { lock.unlock() }
-    array.insert(contentsOf: newElements, at: index)
-    subject.next(ObservableArrayEvent(change: .inserts(Array(index..<index+newElements.count)), source: self))
+    array.insert(contentsOf: newXs, at: index)
+    subject.next(ObservableArrayEvent(change: .inserts(Array(index..<index+newXs.count)), source: self))
   }
   
-  /// Move the element at index `i` to index `toIndex`.
+  /// Move the X at index `i` to index `toIndex`.
   public func moveItem(from fromIndex: Int, to toIndex: Int) {
     lock.lock(); defer { lock.unlock() }
     let item = array.remove(at: fromIndex)
@@ -152,25 +152,25 @@ public class MutableObservableArray<Item>: ObservableArray<Item> {
     subject.next(ObservableArrayEvent(change: .move(fromIndex, toIndex), source: self))
   }
 
-  /// Remove and return the element at index i.
+  /// Remove and return the X at index i.
   @discardableResult
   public func remove(at index: Int) -> Item {
     lock.lock(); defer { lock.unlock() }
-    let element = array.remove(at: index)
+    let X = array.remove(at: index)
     subject.next(ObservableArrayEvent(change: .deletes([index]), source: self))
-    return element
+    return X
   }
 
-  /// Remove an element from the end of the array in O(1).
+  /// Remove an X from the end of the array in O(1).
   @discardableResult
   public func removeLast() -> Item {
     lock.lock(); defer { lock.unlock() }
-    let element = array.removeLast()
+    let X = array.removeLast()
     subject.next(ObservableArrayEvent(change: .deletes([array.count]), source: self))
-    return element
+    return X
   }
 
-  /// Remove all elements from the array.
+  /// Remove all Xs from the array.
   public func removeAll() {
     lock.lock(); defer { lock.unlock() }
     let deletes = Array(0..<array.count)
@@ -325,14 +325,14 @@ extension MutableObservableArray where Item: Equatable {
   }
 }
 
-public extension SignalProtocol where Element: ObservableArrayEventProtocol {
+public extension SignalProtocol where X: ObservableArrayEventProtocol {
 
-  public typealias Item = Element.Item
+  public typealias Item = X.Item
 
   /// Map underlying ObservableArray.
   /// Complexity of mapping on each event is O(n).
   public func map<U>(_ transform: @escaping (Item) -> U) -> Signal<ObservableArrayEvent<U>, Error> {
-    return map { (event: Element) -> ObservableArrayEvent<U> in
+    return map { (event: X) -> ObservableArrayEvent<U> in
       let mappedArray = ObservableArray(event.source.array.map(transform))
       return ObservableArrayEvent<U>(change: event.change, source: mappedArray)
     }
@@ -341,7 +341,7 @@ public extension SignalProtocol where Element: ObservableArrayEventProtocol {
   /// Laziliy map underlying ObservableArray.
   /// Complexity of mapping on each event (change) is O(1).
   public func lazyMap<U>(_ transform: @escaping (Item) -> U) -> Signal<ObservableArrayEvent<U>, Error> {
-    return map { (event: Element) -> ObservableArrayEvent<U> in
+    return map { (event: X) -> ObservableArrayEvent<U> in
       let mappedArray = ObservableArray(event.source.array.lazy.map(transform))
       return ObservableArrayEvent<U>(change: event.change, source: mappedArray)
     }
@@ -352,7 +352,7 @@ public extension SignalProtocol where Element: ObservableArrayEventProtocol {
   public func filter(_ isIncluded: @escaping (Item) -> Bool) -> Signal<ObservableArrayEvent<Item>, Error> {
     var isBatching = false
     var previousIndexMap: [Int: Int] = [:]
-    return map { (event: Element) -> [ObservableArrayEvent<Item>] in
+    return map { (event: X) -> [ObservableArrayEvent<Item>] in
       let array = event.source.array
       var filtered: [Item] = []
       var indexMap: [Int: Int] = [:]
@@ -360,9 +360,9 @@ public extension SignalProtocol where Element: ObservableArrayEventProtocol {
       filtered.reserveCapacity(array.count)
 
       var iterator = 0
-      for (index, element) in array.enumerated() {
-        if isIncluded(element) {
-          filtered.append(element)
+      for (index, X) in array.enumerated() {
+        if isIncluded(X) {
+          filtered.append(X)
           indexMap[index] = iterator
           iterator += 1
         }
@@ -426,17 +426,17 @@ public extension SignalProtocol where Element: ObservableArrayEventProtocol {
   }
 }
 
-extension SignalProtocol where Element: Collection, Element.Iterator.Element: Equatable {
+extension SignalProtocol where X: Collection, X.Iterator.Element: Equatable {
 
   // Diff each emitted collection with the previously emitted one.
   // Returns a signal of ObservableArrayEvents that can be bound to a table or collection view.
-  public func diff() -> Signal<ObservableArrayEvent<Element.Iterator.Element>, Error> {
+  public func diff() -> Signal<ObservableArrayEvent<X.Iterator.Element>, Error> {
     return Signal { observer in
-      var previous: MutableObservableArray<Element.Iterator.Element>? = nil
+      var previous: MutableObservableArray<X.Iterator.Element>? = nil
       return self.observe { event in
         switch event {
-        case .next(let element):
-          let array = Array(element)
+        case .next(let X):
+          let array = Array(X)
           if let previous = previous {
             let disposable = previous.skip(first: 1).observeNext { event in observer.next(event) }
             previous.replace(with: array, performDiff: true)
@@ -455,10 +455,10 @@ extension SignalProtocol where Element: Collection, Element.Iterator.Element: Eq
   }
 }
 
-fileprivate extension SignalProtocol where Element: Sequence {
+fileprivate extension SignalProtocol where X: Sequence {
 
-  /// Unwrap sequence elements into signal elements.
-  fileprivate func _unwrap() -> Signal<Element.Iterator.Element, Error> {
+  /// Unwrap sequence Xs into signal Xs.
+  fileprivate func _unwrap() -> Signal<X.Iterator.Element, Error> {
     return Signal { observer in
       return self.observe { event in
         switch event {
